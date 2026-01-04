@@ -1,4 +1,4 @@
-# COVID Tweet Sentiment — Statistical Analysis (Frequentist & Bayesian)
+# COVID Tweet Sentiment - Statistical Analysis (Frequentist & Bayesian)
 
 The project investigates whether **tweet metadata** (e.g., word count, hashtags, URLs, mentions, punctuation cues, and user-level metrics) meaningfully explains variation in **tweet sentiment** related to COVID-19 vaccination. The emphasis is on **statistical inference, diagnostics, and responsible interpretation**, rather than predictive performance alone.
 
