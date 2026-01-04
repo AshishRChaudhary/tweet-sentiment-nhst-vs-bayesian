@@ -32,6 +32,13 @@ The project investigates whether **tweet metadata** (e.g., word count, hashtags,
 
 ---
 
+## Tech Stack
+
+- `R` , `RMarkdown`
+- `tidyverse` (data manipulation and visualization)
+- `performance` (VIF and diagnostic checks)
+- Bayesian modeling packages (for posterior estimation and convergence diagnostics)
+
 ## Dataset and Source Paper
 
 This project uses a publicly available dataset but does **not** upload the data to GitHub.
