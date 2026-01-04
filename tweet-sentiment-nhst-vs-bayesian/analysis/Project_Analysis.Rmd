@@ -1,0 +1,245 @@
+---
+title: "Project Analysis"
+author: "Ashish Chaudhary"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_notebook: default
+---
+
+```{r}
+library(tidyverse)
+library(lubridate)#date/time handling
+library(vader)#sentiment analysis
+library(tm)#text preprocessing
+library(stringr)# For string manipulation
+
+covid_tweets = read.csv("covidvaccine.csv", stringsAsFactors = FALSE, na.strings = c("","NA","NaN"))
+```
+
+#EDA
+```{r}
+glimpse(covid_tweets)
+names(covid_tweets)
+head(covid_tweets)
+colSums(is.na(covid_tweets))
+```
+
+# Handling Missing data
+```{r}
+#Remove rows with missing tweets, user_name (including unverified ones)
+covid_tweets_clean <- covid_tweets %>% drop_na(text,user_name,user_verified)
+
+# Dropping insignificant columns
+covid_tweets_clean <- covid_tweets_clean %>% select(-user_created, -date) # 90% values missing
+
+# Retweets may not represent original sentiment from that user, proceed with original tweets only.
+covid_tweets_clean <- covid_tweets_clean %>%select(-"is_retweet")
+
+covid_tweets_clean$user_friends <- as.numeric(covid_tweets_clean$user_friends)
+covid_tweets_clean$user_favourites <- as.numeric(covid_tweets_clean$user_favourites)
+
+#imputing with median
+covid_tweets_clean <- covid_tweets_clean %>%
+  mutate(
+    user_followers = ifelse(is.na(user_followers), median(user_followers, na.rm = TRUE), user_followers),
+    user_friends = ifelse(is.na(user_friends), median(user_friends, na.rm = TRUE), user_friends),
+    user_favourites = ifelse(is.na(user_favourites), median(user_favourites, na.rm = TRUE), user_favourites),
+    follower_friend_ratio= user_followers / (user_friends + 1) # follower-to-friend ratio gives better idea about engagement of user.
+  )
+
+glimpse(covid_tweets_clean)
+```
+
+```{r}
+#missing values in each column
+colSums(is.na(covid_tweets_clean))
+
+# removing duplicate tweets
+sum(duplicated(covid_tweets_clean$text))
+covid_tweets_clean <- covid_tweets_clean %>% distinct(text, .keep_all = TRUE)
+glimpse(covid_tweets_clean)
+```
+In total 417 records removed.
+
+# Text Based Features
+```{r}
+# 1. Calculate text length (character count)
+covid_tweets_clean$text_length <- nchar(covid_tweets_clean$text)
+
+# 2. Calculate word count
+covid_tweets_clean$word_count <- str_count(covid_tweets_clean$text, "\\S+")
+
+# 3. Count number of hashtags
+covid_tweets_clean$hashtag_count <- str_count(covid_tweets_clean$hashtags, ",") + 
+  ifelse(covid_tweets_clean$hashtags == "" | covid_tweets_clean$hashtags == "[]", 
+         0, 1)
+
+# 4. Check if tweet contains URLs
+covid_tweets_clean$has_url <- grepl("http", covid_tweets_clean$text, ignore.case = TRUE)
+
+# 5. Check if tweet contains mentions (@)
+covid_tweets_clean$has_mention <- grepl("@", covid_tweets_clean$text)
+
+# 6. Count exclamation marks (indicates emotion/emphasis)
+covid_tweets_clean$exclamation_count <- str_count(covid_tweets_clean$text, "!")
+
+# 7. Count question marks
+covid_tweets_clean$question_count <- str_count(covid_tweets_clean$text, "\\?")
+names(covid_tweets_clean)
+```
+
+
+# Sentiment Analysis Using VADER 
+```{r}
+library(sentimentr)
+
+# Step 1: Pre-parse tweets into sentences
+sentences <- get_sentences(covid_tweets_clean$text)
+
+# Step 2: Sentiment analysis (fast)
+sentiment_scores <- sentiment_by(sentences)
+
+# Step 3: Add to dataset
+covid_tweets_clean$sentiment_compound <- sentiment_scores$ave_sentiment
+
+# Optional sentiment categories like VADER
+covid_tweets_clean$sentiment_category <- cut(covid_tweets_clean$sentiment_compound,
+  breaks = c(-Inf, -0.05, 0.05, Inf),
+  labels = c("Negative", "Neutral", "Positive")
+)
+
+```
+
+
+# Analysis of Sentiment using Frequentist and Bayesian Linear regression
+```{r}
+library(lmtest); library(corrplot);
+library(BayesFactor); library(performance);
+library(MCMCpack); library(bayestestR);
+library(easystats); library(coda)
+```
+
+Positive correlation → higher value → more positive sentiment
+
+Negative correlation → higher value → more negative sentiment
+
+Magnitude: 0.00–0.10 = very weak, 0.10–0.30 = weak, 0.30+ = moderate+
+
+
+
+```{r}
+model_data <- covid_tweets_clean %>%
+  mutate(
+    log_followers = log10(user_followers + 1),
+    log_friends = log10(user_friends + 1)
+  ) %>%
+  drop_na()
+```
+
+
+```{r}
+#important to have numeric coulmns for corr
+numeric_vars <- model_data %>% select_if(is.numeric)
+cor_matrix <- cor(numeric_vars, use = "complete.obs")
+corrplot(cor_matrix, method = "color", type = "upper", tl.cex = 0.7, tl.col = "black")
+cor_matrix[,"sentiment_compound"]
+```
+Correlations are very small, meaning no variable strongly predicts sentiment alone.
+Hashtags and questions lean slightly negative, exclamation marks lean slightly positive.
+User level data (followers, friends) has almost no meaningful correlation with sentiment, hence could be removed for further analysis
+
+# FREQUENTIST LINEAR REGRESSION ANALYSIS
+
+Null hyp : No relationship between any predictor and sentiment
+Alt hyp: At least one predictor significantly affects sentiment
+
+```{r}
+model_formula <- sentiment_compound ~ text_length + word_count + hashtag_count +has_url +
+                has_mention + exclamation_count + question_count + log_followers + log_friends +
+                follower_friend_ratio
+
+freq_model <- lm(model_formula, data = model_data)
+summary(freq_model)
+```
+
+The overall model is significant (F(10, 259947) = 469.5, p<0.05). This confirms that at least one predictor affects sentiment.
+However, R2 is 0.0177 indicates the model explains only 1.84% of variance, showing weak practical significance despite statistical significance
+
+hashtag_count(B=-0.00665, p<0.05): More hashtags, slightly more negative sentiment.
+exclamation_count(B=0.0139, p<0.05): Tweets with more ! are more positive.
+question_count(B=-0.0172, p<0.05): Questions express uncertainty or concern,more negative sentiment.
+has_url(B=0.0239, p<0.05):Tweets with URLs are marginally more positive. Similary has_mention(B=0.0096, p<0.05).
+
+follower_friend_ratio(B approx. 0, p<0.05):statistically significant due to large N, but practically meaningless effect.
+
+text_length (B=0.000146, p<0.05)
+word_count (B=-0.000728, p<0.05)
+Both are significant but the effect sizes are almost zero, offering negligible practical value.
+
+We reject the null hypothesis statistically, the model detects multiple predictors affecting sentiment.
+
+```{r}
+check_collinearity(freq_model)# VIF and multicollinearity
+check_residuals(freq_model)#autocorrelation + distribution of residuals
+check_outliers(freq_model)
+```
+
+Since VIF of all variables are less than 5, we can say them largely independent and do not exhibit harmful multicollinearity, except text_length and word_count with 14.14 and 11.93 respectively, so we can toss them out from analysis.
+
+The model shows mild heteroscedasticity(non-uniformity of variance), likely due to large sample size.
+
+No Influential Outliers.
+
+# BAYESIAN LINEAR REGRESSION ANALYSIS
+```{r}
+model_data <- model_data %>%
+  mutate(
+    has_url = as.factor(has_url),
+    has_mention = as.factor(has_mention)
+  ) %>% filter(if_all(where(is.numeric), is.finite))
+bf_model <- lmBF(model_formula, data = model_data)
+summary(bf_model)
+```
+
+The Bayes factor for the full model is 8.906276e+1053, which is huge, indicating overwhelming evidence in favor of the model with these predictor(text_length + word_count + hashtag_count + has_url + has_mention + exclamation_count + question_count + log_followers + log_friends +     follower_friend_ratio) i.e. in favor of alt hypothesis.
+
+```{r}
+lmout_mcmc= lmBF(sentiment_compound ~ word_count + hashtag_count + has_url + has_mention +
+            exclamation_count + question_count + log_followers + log_friends +
+            follower_friend_ratio, data = model_data, posterior = TRUE, iterations = 10000)
+
+summary(lmout_mcmc)
+mcmc_chain <- as.mcmc(lmout_mcmc)
+traceplot(mcmc_chain)
+describe_posterior(lmout_mcmc)
+```
+The trace Plots looks good.
+
+The Bayesian model indicates that most predictors have small but meaningful effects on sentiment_compound. Positive associations are observed for exclamation_count, log_followers, and has_mention-TRUE, while negative associations are seen for word_count, hashtag_count, question_count, and log_friends. 
+
+For some predictors (word_count and follower_friend_ratio), the 95% CI are very narrow include 0 or super close to 0, suggesting that their effects are weak or potentially negligible. Overall, the model captures subtle but consistent relationships, though practical effect sizes are small.
+
+All posterior distributions are narrow with high probability density, indicating stable estimates, and nearly all parameters lie outside the ROPE of [-0.1, 0.1], confirming meaningful effects. Overall, the model captures subtle but consistent relationships between tweet/user features and sentiment, though effect sizes are small.
+
+
+
+################################################ Conclusion #########################################################
+
+>> Null hyp : No relationship between any predictor and sentiment
+   Alt hyp: At least one predictor significantly affects sentiment
+
+>> Overall Model Significance: 
+Both analyses show the model is statistically significant (rejecting null hypothesis), indicating at least one predictor affects sentiment. Frequentist R2 is approx 0.018 shows low explanatory power.
+
+>> Positive Predictors:
+exclamation_count and log_followers are consistently associated with more positive sentiment.
+
+>> Negative Predictors: 
+word_count, hashtag_count, and log_friends show negative associations with sentiment, though some intervals include 0 in Bayesian analysis, indicating uncertainty.
+
+>> Non-Significant:
+Features like text_length and follower_friend_ratio have minimal or uncertain effects. CIs contain 0.
+
+
+
