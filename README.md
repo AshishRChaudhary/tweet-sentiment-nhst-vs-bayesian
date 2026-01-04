@@ -4,6 +4,12 @@ The project investigates whether **tweet metadata** (e.g., word count, hashtags,
 
 ---
 
+## Results at a Glance
+- Metadata-based models showed limited explanatory power for sentiment, reinforcing the need for careful interpretation beyond statistical significance.
+- Model diagnostics (collinearity, residual behavior, influence checks, and convergence) played a central role in guiding conclusions.
+- Frequentist and Bayesian analyses were directionally consistent, despite overall weak effect sizes.
+
+---
 ## Repository Contents
 
 ### 📘 Final Report
