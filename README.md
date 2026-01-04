@@ -1,83 +1,92 @@
-# COVID Tweet Sentiment — Statistical Analysis (Frequentist + Bayesian)
+# COVID Tweet Sentiment — Statistical Analysis (Frequentist & Bayesian)
 
-This repository contains my final project for **IST 686 (Quantitative Reasoning for Data Science, Fall 2025)** at **Syracuse University iSchool**.  
-The project explores whether **tweet metadata** (e.g., word count, hashtag count, URLs, mentions, punctuation cues, user metrics) can explain variation in **tweet sentiment** (continuous polarity score).
-
-Rather than over-focusing on “significance,” the goal is to interpret results responsibly using:
-- **Frequentist regression (NHST)** + effect-size awareness  
-- **Bayesian regression** + posterior uncertainty + ROPE interpretation  
-- **Diagnostics** (linearity, heteroscedasticity, influence, multicollinearity, convergence via trace plots)
+The project investigates whether **tweet metadata** (e.g., word count, hashtags, URLs, mentions, punctuation cues, and user-level metrics) meaningfully explains variation in **tweet sentiment** related to COVID-19 vaccination. The emphasis is on **statistical inference, diagnostics, and responsible interpretation**, rather than predictive performance alone.
 
 ---
 
-## What’s inside this repo
+## Repository Contents
 
-### ✅ Final Report
+### 📘 Final Report
 - `report/Final_Report.pdf`  
-  Full write-up (EDA → modeling → diagnostics → interpretation).
+  Complete written report covering:
+  - Research questions and data understanding  
+  - Data exploration and preparation  
+  - Frequentist and Bayesian analyses  
+  - Model diagnostics  
+  - Interpretation and conclusions  
 
-### ✅ Reproducible Analysis (RMarkdown)
+### 📊 Reproducible Analysis
 - `analysis/Project_Analysis.Rmd`  
-  Full workflow in RMarkdown.
+  Full RMarkdown workflow used for analysis.
 - `analysis/Project_Analysis.html` (or `.pdf`)  
-  Knitted output for easy viewing.
+  Knitted output for easy review of results, tables, and diagnostics.
 
-### ✅ Literature / Course Reference
-- `literature/` includes supporting course materials used for methodological guidance.
+### 📚 Literature
+- `literature/`  
+  Contains course-related reference material used for conceptual and methodological guidance.
 
----
-
-## Dataset and Source Paper (Links Only)
-
-This repo does **not** upload the dataset file to GitHub.
-I worked with the dataset locally, so **please download it from Kaggle** using the link below and update file paths in the `.Rmd` if needed.
-
-Dataset (Kaggle):
-- https://www.kaggle.com/datasets/kaushiksuresh147/covidvaccine-tweets?resource=download
-
-Research paper using the dataset:
-- https://www.tandfonline.com/doi/full/10.1080/21645515.2021.2017216
-
-> Note: If the `.Rmd` references a local file path, replace it with your downloaded Kaggle path.
+### 🗂 Data Instructions
+- `README_DATA.md`  
+  Explains where to obtain the dataset and how to connect it to the analysis.
+  (No raw data files are stored in this repository.)
 
 ---
 
-## Methods Summary (High-level)
+## Dataset and Source Paper
 
-### Data exploration & preparation
-- Inspected univariate and bivariate distributions for skewness and non-linear patterns  
-- Addressed skewed count variables using transformations when appropriate  
-- Checked multicollinearity using **VIF** (kept predictors stable by removing only one from highly correlated pairs)  
-- Validated modeling assumptions via diagnostics and influence checks
+This project uses a publicly available dataset but does **not** upload the data to GitHub.
 
-### Models
-1. **Frequentist multiple regression (NHST)**
+### Dataset (Kaggle)
+https://www.kaggle.com/datasets/kaushiksuresh147/covidvaccine-tweets?resource=download
+
+### Research Paper Using the Dataset
+Kalin, M., Rohani, P., & Kumar, S. (2022). *Forecasting the COVID-19 vaccine uptake rate: An infodemiological study in the US*.  
+https://www.tandfonline.com/doi/full/10.1080/21645515.2021.2017216
+
+> Note: The dataset was loaded locally during analysis. Users cloning this repo should download the dataset from Kaggle and update file paths in the RMarkdown file accordingly.
+
+---
+
+## Methods Overview (High-Level)
+
+### Data Exploration & Preparation
+- Examined univariate and bivariate distributions for skewness and non-linearity  
+- Applied transformations where appropriate for skewed count variables  
+- Evaluated multicollinearity using **VIF**  
+- Assessed assumptions through residual diagnostics and influence measures  
+
+### Statistical Models
+1. **Frequentist multiple linear regression (NHST)**
 2. **Bayesian regression**
-   - Posterior summaries, credible intervals/HDI
-   - ROPE-based practical significance checks
-   - Trace plots for convergence and stable sampling
+   - Posterior summaries and uncertainty
+   - ROPE-based practical significance
+   - Trace plots for convergence assessment
 
-### Interpretation philosophy
-This project emphasizes **practical significance** and **diagnostic validity**, not just p-values, especially given large samples where tiny effects can become statistically significant.
+The analysis prioritizes **effect sizes, uncertainty, and diagnostics**, especially given the large sample size.
 
 ---
 
-## How to run (quick)
+## How to Run the Analysis
+
 1. Download the dataset from Kaggle (link above).
 2. Open `analysis/Project_Analysis.Rmd` in RStudio.
-3. Update the dataset file path in the Rmd.
-4. Knit the document to HTML/PDF.
+3. Replace the local dataset file path with your own.
+4. Knit the document to HTML or PDF.
 
 ---
 
-## Credits / Acknowledgment
-Course: **IST 686 – Quantitative Reasoning for Data Science (Fall 2025)**  
-Instructor: **Professor Kevin Crowston**  
-Student: **Ashish Chaudhary**
+## Credits and Acknowledgment
 
-This project uses the same dataset referenced in the published study above; however, the analysis, diagnostics, and interpretations in this repository are my independent work for the course.
+- **Course:** IST 686 – Quantitative Reasoning for Data Science (Fall 2025)  
+- **Instructor:** Professor Kevin Crowston  
+- **Student:** Ashish Chaudhary  
+
+While this project is based on the same dataset examined in Kalin et al. (2022) and informed by their conceptual approach, the analytical methods, diagnostics, and interpretations presented here represent my independent work for this academic learning.
 
 ---
 
 ## Citation
-If you use this repo, please cite the dataset source (Kaggle) and the original paper linked above.
+
+If you reference this repository, please cite:
+- The Kaggle dataset (link above)
+- Kalin et al. (2022), *Human Vaccines & Immunotherapeutics*
